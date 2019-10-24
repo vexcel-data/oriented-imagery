@@ -36,6 +36,9 @@ define([
     "esri/layers/KMLLayer",
     "esri/layers/VectorTileLayer",
     "https://oi.geocloud.com/api/v1.1/main.js",
+	
+	
+	
     "dijit/form/Select",
     "dijit/form/Button",
     "dijit/form/CheckBox",
@@ -66,7 +69,7 @@ define([
                     this.selectOIC.on("change", lang.hitch(this, this.selectFeatureService));
                     this.imagePoints.on("change", lang.hitch(this, this.turningOnOffFeatures, 'imagePoints'));
                     this.currentCoverage.on("change", lang.hitch(this, this.turningOnOffFeatures, "currentCoverage"));
-                    this.similarCoverage.on("change", lang.hitch(this, this.turningOnOffFeatures, "similarCoverage"));
+                    //this.similarCoverage.on("change", lang.hitch(this, this.turningOnOffFeatures, "similarCoverage"));
                     this.addBtn.on("click", lang.hitch(this, function () {
                         if (!this.addOICDialog.open) {
                             this.addOICDialog.show();
@@ -79,7 +82,7 @@ define([
                     this.agolContentSelect.on("change", lang.hitch(this, this.populateFolderGroupList));
                     this.agolFolderList.on("change", lang.hitch(this, this.populateOICList));
                     this.agolOICList.on("change", lang.hitch(this, this.checkOIC));
-                    this.allCoverage.on("change", lang.hitch(this, this.createCoverageArea));
+                    //this.allCoverage.on("change", lang.hitch(this, this.createCoverageArea));
                     this.loadOrientedImageryCatalog();
 
                     if (this.map) {
@@ -172,19 +175,21 @@ define([
                     });
                 },
                 selectFeatureService: function (value) {
+                    console.log("getting selectFeatureService at change ");
                     value = Number(value);
                     if (this.overviewLayer) {
                         this.map.removeLayer(this.overviewLayer);
                         this.overviewLayer = null;
                     }
                     this.graphicExists = false;
-                    this.allCoverage.set("checked", false);
+                    //this.allCoverage.set("checked", false);
                     this.map.graphics.clear();
                     this.imageDialog.hide();
                     if (value !== "select") {
 
                         var url = this.config.oic[value].serviceUrl;
                         if (url.indexOf("ImageServer") === -1) {
+							console.log('1111111');
                             var query = new Query();
                             query.where = "1=1";
                             query.returnGeometry = false;
@@ -192,10 +197,10 @@ define([
                             var queryTask = new QueryTask(url);
                             queryTask.executeForExtent(query, lang.hitch(this, function (response) {
                                 if (response.extent) {
-                                    this.map.setExtent(response.extent);
+                                   this.map.setExtent(response.extent);
                                 }
                             }));
-                        } else {
+                        }/* else {
                             var request = new esriRequest({
                                 url: url,
                                 content: {
@@ -204,24 +209,37 @@ define([
                                 "handleAs": "json",
                                 "callbackParamName": "callback"
                             });
-                            request.then(lang.hitch(this, function (response) {
-                                if (response && response.extent) {
-                                    if (response.extent.spatialReference.wkid === this.map.spatialReference.wkid)
-                                        this.map.setExtent(new Extent(response.extent));
-                                    else {
-                                        var params = new ProjectParameters();
-                                        params.geometries = [new Extent(response.extent)];
-                                        params.outSR = new SpatialReference(this.map.spatialReference.wkid);
-                                        this.geometryService.project(params, lang.hitch(this, function (geometry) {
-                                            this.map.setExtent(geometry[0]);
-                                        }));
-                                    }
-                                }
-                            }));
-                        }
+                            //20190821 - Richard Butgereit, GIC/Vexcel - removing zoom to extent of new selected layer
+                            //request.then(lang.hitch(this, function (response) {
+                            //    if (response && response.extent) {
+                            //        if (response.extent.spatialReference.wkid === this.map.spatialReference.wkid)
+                            //            this.map.setExtent(new Extent(response.extent));
+                            //        else {
+                            //            var params = new ProjectParameters();
+                            //            params.geometries = [new Extent(response.extent)];
+                            //            params.outSR = new SpatialReference(this.map.spatialReference.wkid);
+                            //            this.geometryService.project(params, lang.hitch(this, function (geometry) {
+                            //                this.map.setExtent(geometry[0]);
+                            //            }));
+                            //        }
+                            //    }
+                            //}));
+                        }*/
                         if (this.config.oic[value].overviewUrl) {
                             this.overviewLayer = this.layerModuleSelector(this.config.oic[value].overviewUrl);
                             this.map.addLayer(this.overviewLayer);
+                        }
+						//Rahul changes 22/10/2019
+						if (this.widgetOpen) {
+							if (this.selectOIC.get("value") !== "select") {
+                                this.showPointOnMap(this.map.extent.getCenter());
+                                this.groundToImage(this.map.extent.getCenter());
+                                this.graphicExists = false;
+                                this.showLoading();
+                                this.imageDialog.show();
+                                domConstruct.destroy(this.imageDialog.id + "_underlay");
+                                this.searchImages(this.map.extent.getCenter());
+                            }
                         }
                     }
                 },
@@ -262,7 +280,7 @@ define([
                             }
                             break;
                         }
-                        case 'similarCoverage' :
+                      /*  case 'similarCoverage' :
                         {
                             if (this.similarCoverage.get("checked")) {
                                 for (var s = this.map.graphics.graphics.length - 1; s >= 0; s--) {
@@ -278,7 +296,7 @@ define([
                                 }
                             }
                             break;
-                        }
+                        }*/
 
                     }
                 },
@@ -289,7 +307,7 @@ define([
                                 this.showPointOnMap(evt.mapPoint);
                                 this.groundToImage(evt.mapPoint);
                             } else {
-                                this.allCoverage.set("checked", false);
+                                //this.allCoverage.set("checked", false);
                                 this.graphicExists = false;
                                 this.showLoading();
                                 this.imageDialog.show();
@@ -332,11 +350,11 @@ define([
                             if (!this.currentCoverage.checked)
                                 this.map.graphics.graphics[this.map.graphics.graphics.length - 1].hide();
                             var currentIndex = this.map.graphics.graphics.length - 1;
-                        } else {
+                        } /*else {
                             this.map.graphics.add(new Graphic(polygons[a], this.polygonSymbol, {"imageID": polygons[a].imageID}));
                             if (!this.similarCoverage.checked)
                                 this.map.graphics.graphics[this.map.graphics.graphics.length - 1].hide();
-                        }
+                        }*/
                     }
                     if (currentIndex)
                         this.map.graphics.graphics[currentIndex].getDojoShape().moveToFront();
@@ -381,9 +399,9 @@ define([
                         } else if (this.map.graphics.graphics[v].symbol.style === "solid" && this.map.graphics.graphics[v].attributes.imageID === this.activeImageID) {
                             this.map.graphics.graphics[v].setSymbol(this.polygonSymbol);
                             this.map.graphics.graphics[v].setGeometry(this.coveragePolygons["p" + this.activeImageID]);
-                            if (!this.similarCoverage.checked)
+                            /*if (!this.similarCoverage.checked)
                                 this.map.graphics.graphics[v].hide();
-                            else
+                            else*/
                                 this.map.graphics.graphics[v].show();
                         } else if (this.map.graphics.graphics[v].symbol.style === "circle" && this.map.graphics.graphics[v].attributes.imageID === image.imageID) {
                             this.map.graphics.graphics[v].setSymbol(this.activeSourcePointSymbol);
@@ -657,6 +675,7 @@ define([
                     this.widgetOpen = true;
                 },
                 onClose: function () {
+                    this.map.graphics.clear();
                     this.widgetOpen = false;
                 },
                 showLoading: function () {
